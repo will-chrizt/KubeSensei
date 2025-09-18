@@ -1,4 +1,4 @@
-import os
+import streamlit as st
 import subprocess
 from langchain_aws import ChatBedrock
 from langgraph.graph import StateGraph
@@ -57,22 +57,18 @@ def generate_command(state):
     query = state["query"]
     response = llm.invoke(kubectl_prompt.format(query=query))
     text = response.content if hasattr(response, "content") else str(response)
-
-    # Extract kubectl command
     command = None
     for line in text.splitlines():
         if line.strip().startswith("kubectl"):
             command = line.strip()
             break
-
     if not command:
         raise ValueError(f"LLM did not return a valid kubectl command:\n{text}")
-
     state["command"] = command
     return state
+
 def execute_command(state):
     cmd = state["command"]
-    print(f"\nExecuting: {cmd}")
     output = run_cmd(cmd)
     state["raw_output"] = output
 
@@ -80,15 +76,8 @@ def execute_command(state):
     if cmd.startswith("kubectl create") or cmd.startswith("kubectl apply"):
         state["diagnostics"] = "creation_command"
     else:
-        # Only run diagnostics if pods exist and have issues
-        pods_exist = any(
-            line.split()[0] != "" and "NAME" not in line
-            for line in output.splitlines()
-        )
-        has_issues = any(
-            status in output for status in ["Pending", "CrashLoopBackOff", "Error"]
-        )
-
+        pods_exist = any(line.split()[0] != "" and "NAME" not in line for line in output.splitlines())
+        has_issues = any(status in output for status in ["Pending", "CrashLoopBackOff", "Error"])
         extra_info = ""
         if pods_exist and has_issues:
             namespace = None
@@ -111,9 +100,7 @@ def execute_command(state):
         state["diagnostics"] = extra_info if extra_info else "No pods with issues detected."
     return state
 
-
 def explain_output(state):
-    # If it's a creation command, just return what was created
     if state.get("diagnostics") == "creation_command":
         created_items = []
         for line in state["raw_output"].splitlines():
@@ -132,25 +119,27 @@ workflow = StateGraph(dict)
 workflow.add_node("generate_command", generate_command)
 workflow.add_node("execute_command", execute_command)
 workflow.add_node("explain_output", explain_output)
-
 workflow.add_edge("generate_command", "execute_command")
 workflow.add_edge("execute_command", "explain_output")
-
 workflow.set_entry_point("generate_command")
 workflow.set_finish_point("explain_output")
+app_workflow = workflow.compile()
 
-app = workflow.compile()
+# ---- Streamlit UI ----
+st.set_page_config(page_title="KubeSensei", page_icon="🧠")
+st.title("🧠 KubeSensei - Kubernetes Assistant")
 
-# ---- Interactive Loop ----
-if __name__ == "__main__":
-    print("🚀 Kubernetes Assistant (type 'exit' to quit)")
-    while True:
-        user_query = input("\nEnter your Kubernetes request: ")
-        if user_query.lower() in ["exit", "quit"]:
-            print("👋 Goodbye!")
-            break
-        try:
-            result = app.invoke({"query": user_query})
-            print("\n--- Explanation ---\n", result["output"])
-        except Exception as e:
-            print(f"⚠️ Error: {e}")
+user_input = st.text_input("Enter your Kubernetes request:")
+
+if st.button("Execute"):
+    if user_input.strip() == "":
+        st.warning("Please enter a Kubernetes request.")
+    else:
+        with st.spinner("Processing..."):
+            try:
+                result = app_workflow.invoke({"query": user_input})
+                st.subheader("Command & Explanation")
+                st.code(result["command"], language="bash")
+                st.text_area("Explanation", value=result["output"], height=400)
+            except Exception as e:
+                st.error(f"⚠️ Error: {e}")
