@@ -1,12 +1,12 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: kubesensei-binding
+  name: kubesensei-crb
 subjects:
   - kind: ServiceAccount
     name: kubesensei-sa
     namespace: default
 roleRef:
   kind: ClusterRole
-  name: kubesensei-role
+  name: kubesensei-clusterrole
   apiGroup: rbac.authorization.k8s.io
