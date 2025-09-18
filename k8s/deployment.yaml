@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubesensei
+  labels:
+    app: kubesensei
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubesensei
+  template:
+    metadata:
+      labels:
+        app: kubesensei
+    spec:
+      containers:
+        - name: kubesensei
+          image: willchrist/kubesensei:1.1
+          imagePullPolicy: Always
+          # Pass your AWS region if using Bedrock
+          env:
+            - name: AWS_REGION
+              value: "us-east-1"
+          # Optional: mount kubeconfig if needed (for host-based kubeconfig)
+          volumeMounts:
+            - name: kube-config
+              mountPath: /root/.kube
+      volumes:
+        - name: kube-config
+          hostPath:
+            path: /home/ec2-user/.kube   # Change to your kubeconfig path on node
+            type: Directory
