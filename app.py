@@ -39,15 +39,10 @@ Explanation:
 """
 )
 
-# ---- Utility to run shell commands ----
+# ---- Utility ----
 def run_cmd(cmd):
     try:
-        result = subprocess.run(
-            cmd.split(),
-            capture_output=True,
-            text=True,
-            check=True
-        )
+        result = subprocess.run(cmd.split(), capture_output=True, text=True, check=True)
         return (result.stdout + result.stderr).strip()
     except subprocess.CalledProcessError as e:
         return (e.stdout + e.stderr).strip()
@@ -57,11 +52,7 @@ def generate_command(state):
     query = state["query"]
     response = llm.invoke(kubectl_prompt.format(query=query))
     text = response.content if hasattr(response, "content") else str(response)
-    command = None
-    for line in text.splitlines():
-        if line.strip().startswith("kubectl"):
-            command = line.strip()
-            break
+    command = next((line.strip() for line in text.splitlines() if line.strip().startswith("kubectl")), None)
     if not command:
         raise ValueError(f"LLM did not return a valid kubectl command:\n{text}")
     state["command"] = command
@@ -71,41 +62,32 @@ def execute_command(state):
     cmd = state["command"]
     output = run_cmd(cmd)
     state["raw_output"] = output
+    pods_exist = any(line.split()[0] != "" and "NAME" not in line for line in output.splitlines())
+    has_issues = any(status in output for status in ["Pending", "CrashLoopBackOff", "Error"])
+    extra_info = ""
+    pod_statuses = []
 
-    # Determine if we need pod diagnostics
-    if cmd.startswith("kubectl create") or cmd.startswith("kubectl apply"):
-        state["diagnostics"] = "creation_command"
-    else:
-        pods_exist = any(line.split()[0] != "" and "NAME" not in line for line in output.splitlines())
-        has_issues = any(status in output for status in ["Pending", "CrashLoopBackOff", "Error"])
-        extra_info = ""
-        if pods_exist and has_issues:
-            namespace = None
-            if "-n" in cmd or "--namespace" in cmd:
-                parts = cmd.split()
-                if "-n" in parts:
-                    namespace = parts[parts.index("-n") + 1]
-                elif "--namespace" in parts:
-                    namespace = parts[parts.index("--namespace") + 1]
+    if pods_exist:
+        for line in output.splitlines():
+            parts = line.split()
+            if len(parts) >= 2 and parts[0] != "NAME":
+                pod_name = parts[0]
+                status = parts[2] if len(parts) >= 3 else "Unknown"
+                pod_statuses.append((pod_name, status))
+                if status in ["Pending", "CrashLoopBackOff", "Error"]:
+                    extra_info += f"\n\n--- Describe {pod_name} ---\n"
+                    extra_info += run_cmd(f"kubectl describe pod {pod_name}")
+                    extra_info += f"\n\n--- Logs {pod_name} ---\n"
+                    extra_info += run_cmd(f"kubectl logs {pod_name} --tail=50 || true")
 
-            for line in output.splitlines():
-                if any(status in line for status in ["Pending", "CrashLoopBackOff", "Error"]):
-                    pod_name = line.split()[0]
-                    if namespace:
-                        extra_info += f"\n\n--- Describe {pod_name} ---\n"
-                        extra_info += run_cmd(f"kubectl describe pod {pod_name} -n {namespace}")
-                        extra_info += f"\n\n--- Logs {pod_name} ---\n"
-                        extra_info += run_cmd(f"kubectl logs {pod_name} -n {namespace} --tail=50 || true")
-
-        state["diagnostics"] = extra_info if extra_info else "No pods with issues detected."
+    state["diagnostics"] = extra_info if extra_info else "No pods with issues detected."
+    state["pod_statuses"] = pod_statuses
     return state
 
 def explain_output(state):
     if state.get("diagnostics") == "creation_command":
-        created_items = []
-        for line in state["raw_output"].splitlines():
-            if any(line.startswith(prefix) for prefix in ["namespace/", "service/", "deployment/", "pod/"]):
-                created_items.append(line)
+        created_items = [line for line in state["raw_output"].splitlines()
+                         if any(line.startswith(prefix) for prefix in ["namespace/", "service/", "deployment/", "pod/"])]
         state["output"] = "Created: " + ", ".join(created_items) if created_items else "Resource created successfully."
     else:
         combined_output = state["raw_output"] + "\n\n" + state.get("diagnostics", "")
@@ -126,20 +108,44 @@ workflow.set_finish_point("explain_output")
 app_workflow = workflow.compile()
 
 # ---- Streamlit UI ----
-st.set_page_config(page_title="KubeSensei", page_icon="🧠")
+st.set_page_config(page_title="KubeSensei", page_icon="🧠", layout="wide")
 st.title("🧠 KubeSensei - Kubernetes Assistant")
 
 user_input = st.text_input("Enter your Kubernetes request:")
 
 if st.button("Execute"):
-    if user_input.strip() == "":
+    if not user_input.strip():
         st.warning("Please enter a Kubernetes request.")
     else:
-        with st.spinner("Processing..."):
+        with st.spinner("Processing your request..."):
             try:
                 result = app_workflow.invoke({"query": user_input})
-                st.subheader("Command & Explanation")
+
+                st.subheader("🔹 Generated kubectl Command")
                 st.code(result["command"], language="bash")
-                st.text_area("Explanation", value=result["output"], height=400)
+
+                st.subheader("🔹 Command Output")
+                st.text_area("Output", value=result.get("raw_output", ""), height=200)
+
+                st.subheader("🔹 Pod Statuses")
+                if result.get("pod_statuses"):
+                    for pod, status in result["pod_statuses"]:
+                        if status == "Running":
+                            st.success(f"{pod}: {status}")
+                        elif status == "Pending":
+                            st.warning(f"{pod}: {status}")
+                        else:  # CrashLoopBackOff, Error
+                            st.error(f"{pod}: {status}")
+                else:
+                    st.info("No pods detected or no issues found.")
+
+                st.subheader("🔹 Explanation / Troubleshooting")
+                st.text_area("Explanation", value=result.get("output", ""), height=300)
+
+                if "No pods with issues detected." not in result.get("diagnostics", ""):
+                    with st.expander("📦 Pod Diagnostics"):
+                        st.text_area("Pod Info & Logs", value=result.get("diagnostics", ""), height=300)
+
             except Exception as e:
                 st.error(f"⚠️ Error: {e}")
+
