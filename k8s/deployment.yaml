@@ -31,8 +31,4 @@ spec:
                 secretKeyRef:
                   name: tc-analyzer-secret
                   key: AWS_SECRET_ACCESS_KEY
-            - name: AWS_SESSION_TOKEN        # Optional, if using temporary credentials
-              valueFrom:
-                secretKeyRef:
-                  name: tc-analyzer-secret
-                  key: AWS_SESSION_TOKEN
+         
