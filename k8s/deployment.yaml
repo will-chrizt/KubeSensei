@@ -16,10 +16,23 @@ spec:
     spec:
       containers:
         - name: kubesensei
-          image: willchrist/kubesensei:1.1
+          image: willchrist/kubesensei:1.2
           imagePullPolicy: Always
-          # Pass your AWS region if using Bedrock
           env:
             - name: AWS_REGION
               value: "us-east-1"
-  
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: tc-analyzer-secret
+                  key: AWS_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tc-analyzer-secret
+                  key: AWS_SECRET_ACCESS_KEY
+            - name: AWS_SESSION_TOKEN        # Optional, if using temporary credentials
+              valueFrom:
+                secretKeyRef:
+                  name: tc-analyzer-secret
+                  key: AWS_SESSION_TOKEN
