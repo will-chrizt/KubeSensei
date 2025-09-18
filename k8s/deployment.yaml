@@ -22,12 +22,4 @@ spec:
           env:
             - name: AWS_REGION
               value: "us-east-1"
-          # Optional: mount kubeconfig if needed (for host-based kubeconfig)
-          volumeMounts:
-            - name: kube-config
-              mountPath: /root/.kube
-      volumes:
-        - name: kube-config
-          hostPath:
-            path: /home/ec2-user/.kube   # Change to your kubeconfig path on node
-            type: Directory
+  
