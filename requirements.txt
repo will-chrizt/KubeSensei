@@ -1,0 +1,6 @@
+boto3
+langchain>=0.2.0
+langchain-aws>=0.1.0
+langgraph>=0.0.30
+kubernetes>=29.0.0
+streamlit>=1.35.0
