@@ -20,69 +20,142 @@ KubeSensei is an intelligent Kubernetes management tool that bridges the gap bet
 ### System Architecture Overview
 
 ```mermaid
-graph TD
-    %% User Interface Layer
-    UI[Streamlit Web UI<br/>Port 8501]
+graph TB
+    subgraph "🌐 User Interface Layer"
+        UI["`**Streamlit Web UI**
+        📱 Interactive Dashboard
+        🔗 Port 8501
+        📊 Real-time Status Display`"]
+    end
     
-    %% LangGraph Workflow Nodes
-    GEN[Generate Command Node<br/>LangChain + Prompt Templates]
-    EXEC[Execute Command Node<br/>kubectl + Diagnostics]
-    EXPL[Explain Output Node<br/>LangChain + AI Analysis]
+    subgraph "🐳 KubeSensei Container"
+        subgraph "🔄 LangGraph Orchestration Layer"
+            direction TB
+            START(["`🚀 **Entry Point**
+            User Query Input`"])
+            
+            NODE1["`**🧠 Generate Command**
+            📝 Natural Language Processing
+            ⚡ Prompt Template Engine
+            🎯 kubectl Command Generation`"]
+            
+            NODE2["`**⚡ Execute Command**
+            🔧 Subprocess Execution
+            📊 Output Parsing
+            🩺 Health Detection
+            📋 Diagnostics Collection`"]
+            
+            NODE3["`**🔍 Explain Output**
+            💡 AI Analysis
+            🛠️ Troubleshooting Advice
+            📖 User-friendly Explanation`"]
+            
+            END(["`✅ **Finish Point**
+            Complete Response`"])
+            
+            START --> NODE1
+            NODE1 --> NODE2
+            NODE2 --> NODE3
+            NODE3 --> END
+        end
+        
+        subgraph "🔧 LangChain Integration Layer"
+            direction LR
+            LC_LLM["`**ChatBedrock**
+            🤖 LLM Interface
+            🔗 AWS Integration
+            ⚙️ Model Configuration`"]
+            
+            LC_PROMPT["`**PromptTemplate**
+            📋 kubectl_prompt
+            📋 explain_prompt
+            🎨 Template Formatting`"]
+            
+            LC_CHAIN["`**Chain Operations**
+            🔄 Invoke Methods
+            📤 Response Handling
+            🔧 Content Parsing`"]
+            
+            LC_LLM <--> LC_PROMPT
+            LC_PROMPT <--> LC_CHAIN
+        end
+        
+        subgraph "⚙️ System Components"
+            KUBECTL["`**kubectl CLI**
+            🖥️ Command Execution
+            📊 Output Capture
+            🔒 RBAC Integration`"]
+            
+            SUBPROCESS["`**Python Subprocess**
+            🔧 Process Management
+            📝 stdout/stderr Capture
+            ⚠️ Error Handling`"]
+        end
+    end
     
-    %% LangChain Components
-    CHAT[ChatBedrock<br/>LLM Interface]
-    PROMPT1[kubectl_prompt<br/>Template]
-    PROMPT2[explain_prompt<br/>Template]
+    subgraph "☁️ AWS Cloud Services"
+        BEDROCK["`**AWS Bedrock**
+        🧠 Claude 3 Haiku Model
+        🌍 us-east-1 Region
+        🔐 IAM Authentication`"]
+    end
     
-    %% System Components
-    KUBECTL[kubectl CLI<br/>Command Executor]
-    SUBPROCESS[Python Subprocess<br/>Process Manager]
+    subgraph "⚓ Kubernetes Cluster"
+        API["`**Kubernetes API**
+        🎯 Resource Management
+        📊 Cluster State
+        🔐 Authentication`"]
+        
+        RESOURCES["`**K8s Resources**
+        🟢 Pods
+        📦 Services
+        🚀 Deployments
+        📋 ConfigMaps`"]
+        
+        LOGS["`**Pod Diagnostics**
+        📄 Container Logs
+        🔍 Event History
+        ⚠️ Error States`"]
+    end
     
-    %% External Services
-    BEDROCK[AWS Bedrock<br/>Claude 3 Haiku]
+    subgraph "🔒 RBAC Security Layer"
+        SA["`**ServiceAccount**
+        👤 kubesensei-sa
+        🏷️ Identity Management`"]
+        
+        SECRET["`**AWS Secret**
+        🔑 Access Keys
+        🌍 Region Config
+        🔐 Base64 Encoded`"]
+        
+        RBAC["`**Cluster Admin**
+        ⚡ Full Permissions
+        🔓 All Namespaces
+        🎯 All Resources`"]
+    end
     
-    %% Kubernetes Components
-    API[Kubernetes API Server]
-    PODS[Pods & Resources]
-    LOGS[Container Logs<br/>& Events]
+    %% User Interface Connections
+    UI <==> START
+    END <==> UI
     
-    %% Security Components
-    SA[ServiceAccount<br/>kubesensei-sa]
-    SECRET[AWS Credentials<br/>Secret]
-    RBAC[ClusterRoleBinding<br/>cluster-admin]
+    %% LangGraph Internal Flow
+    NODE1 <--> LC_LLM
+    NODE3 <--> LC_LLM
     
-    %% User Flow
-    UI --> GEN
-    GEN --> EXEC
-    EXEC --> EXPL
-    EXPL --> UI
+    %% LangChain Connections
+    LC_LLM <--> BEDROCK
+    LC_CHAIN --> NODE1
+    LC_CHAIN --> NODE3
     
-    %% LangChain Integration
-    GEN --> CHAT
-    CHAT --> PROMPT1
-    PROMPT1 --> BEDROCK
-    BEDROCK --> PROMPT1
-    PROMPT1 --> CHAT
-    CHAT --> GEN
-    
-    EXPL --> CHAT
-    CHAT --> PROMPT2
-    PROMPT2 --> BEDROCK
-    BEDROCK --> PROMPT2
-    PROMPT2 --> CHAT
-    CHAT --> EXPL
-    
-    %% Command Execution Flow
-    EXEC --> KUBECTL
-    EXEC --> SUBPROCESS
+    %% Execution Layer
+    NODE2 --> KUBECTL
+    NODE2 --> SUBPROCESS
     KUBECTL --> API
-    API --> PODS
-    API --> LOGS
-    PODS --> API
-    LOGS --> API
-    API --> KUBECTL
-    KUBECTL --> EXEC
-    SUBPROCESS --> EXEC
+    
+    %% K8s Resource Access
+    API <--> RESOURCES
+    API <--> LOGS
+    NODE2 <--> LOGS
     
     %% Security Integration
     KUBECTL --> SA
@@ -91,124 +164,70 @@ graph TD
     SECRET --> BEDROCK
     
     %% Styling
-    classDef ui fill:#e3f2fd,stroke:#1565c0,stroke-width:3px
-    classDef workflow fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
-    classDef langchain fill:#fff3e0,stroke:#f57c00,stroke-width:2px
-    classDef system fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
-    classDef external fill:#fff8e1,stroke:#ffa000,stroke-width:2px
-    classDef k8s fill:#e1f5fe,stroke:#0277bd,stroke-width:2px
-    classDef security fill:#ffebee,stroke:#d32f2f,stroke-width:2px
+    classDef uiLayer fill:#e1f5fe,stroke:#01579b,stroke-width:3px
+    classDef orchestration fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef langchain fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef system fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef aws fill:#fff8e1,stroke:#f57f17,stroke-width:2px
+    classDef k8s fill:#e3f2fd,stroke:#0277bd,stroke-width:2px
+    classDef security fill:#ffebee,stroke:#c62828,stroke-width:2px
     
-    class UI ui
-    class GEN,EXEC,EXPL workflow
-    class CHAT,PROMPT1,PROMPT2 langchain
+    class UI uiLayer
+    class START,NODE1,NODE2,NODE3,END orchestration
+    class LC_LLM,LC_PROMPT,LC_CHAIN langchain
     class KUBECTL,SUBPROCESS system
-    class BEDROCK external
-    class API,PODS,LOGS k8s
+    class BEDROCK aws
+    class API,RESOURCES,LOGS k8s
     class SA,SECRET,RBAC security
-```
-
-### Component Block Diagram
-
-```mermaid
-block-beta
-    columns 4
-    
-    block:UI_LAYER:1
-        UI_BLOCK["Streamlit Web UI<br/>• Interactive Dashboard<br/>• Real-time Status<br/>• Port 8501"]
-    end
-    
-    block:WORKFLOW_LAYER:3
-        WORKFLOW_TITLE["LangGraph Workflow Layer"]
-        GEN_BLOCK["Generate Command<br/>• Natural Language Processing<br/>• Prompt Template Engine<br/>• kubectl Generation"]
-        EXEC_BLOCK["Execute Command<br/>• Subprocess Execution<br/>• Health Detection<br/>• Diagnostics Collection"]
-        EXPL_BLOCK["Explain Output<br/>• AI Analysis<br/>• Troubleshooting<br/>• User Explanation"]
-    end
-    
-    block:LANGCHAIN_LAYER:2
-        LANGCHAIN_TITLE["LangChain Integration"]
-        CHATBR_BLOCK["ChatBedrock<br/>• AWS Integration<br/>• Model Interface<br/>• Response Handling"]
-        PROMPT_BLOCK["PromptTemplate<br/>• kubectl_prompt<br/>• explain_prompt<br/>• Variable Injection"]
-    end
-    
-    block:SYSTEM_LAYER:2
-        SYSTEM_TITLE["System Components"]
-        KUBECTL_BLOCK["kubectl CLI<br/>• Command Execution<br/>• Output Capture<br/>• RBAC Integration"]
-        SUBPROC_BLOCK["Python Subprocess<br/>• Process Management<br/>• Error Handling<br/>• Stream Capture"]
-    end
-    
-    block:EXTERNAL_LAYER:1
-        AWS_BLOCK["AWS Bedrock<br/>• Claude 3 Haiku<br/>• us-east-1 Region<br/>• IAM Authentication"]
-    end
-    
-    block:K8S_LAYER:3
-        K8S_TITLE["Kubernetes Cluster"]
-        API_BLOCK["API Server<br/>• Resource Management<br/>• Authentication<br/>• Cluster State"]
-        RESOURCE_BLOCK["Resources<br/>• Pods<br/>• Services<br/>• Deployments"]
-        LOGS_BLOCK["Diagnostics<br/>• Container Logs<br/>• Events<br/>• Error States"]
-    end
-    
-    block:SECURITY_LAYER:3
-        SECURITY_TITLE["RBAC Security"]
-        SA_BLOCK["ServiceAccount<br/>• kubesensei-sa<br/>• Identity Management"]
-        SECRET_BLOCK["AWS Secret<br/>• Access Keys<br/>• Region Config<br/>• Base64 Encoded"]
-        RBAC_BLOCK["ClusterRoleBinding<br/>• cluster-admin<br/>• Full Permissions"]
-    end
-    
-    %% Connections between blocks
-    UI_BLOCK --> GEN_BLOCK
-    GEN_BLOCK --> EXEC_BLOCK
-    EXEC_BLOCK --> EXPL_BLOCK
-    EXPL_BLOCK --> UI_BLOCK
-    
-    GEN_BLOCK --> CHATBR_BLOCK
-    EXPL_BLOCK --> CHATBR_BLOCK
-    CHATBR_BLOCK --> PROMPT_BLOCK
-    CHATBR_BLOCK --> AWS_BLOCK
-    
-    EXEC_BLOCK --> KUBECTL_BLOCK
-    EXEC_BLOCK --> SUBPROC_BLOCK
-    KUBECTL_BLOCK --> API_BLOCK
-    
-    API_BLOCK --> RESOURCE_BLOCK
-    API_BLOCK --> LOGS_BLOCK
-    
-    KUBECTL_BLOCK --> SA_BLOCK
-    SA_BLOCK --> RBAC_BLOCK
-    SECRET_BLOCK --> AWS_BLOCK
 ```
 
 ### Data Flow Architecture
 
 ```mermaid
-flowchart LR
-    A[User Query] --> B[Streamlit UI]
-    B --> C[LangGraph Workflow]
+sequenceDiagram
+    participant U as 👤 User
+    participant ST as 🖥️ Streamlit UI
+    participant LG as 🔄 LangGraph
+    participant LC as 🔗 LangChain
+    participant BR as ☁️ AWS Bedrock
+    participant K as ⚓ kubectl
+    participant API as 🎯 K8s API
     
-    subgraph "Command Generation"
-        C --> D[LangChain ChatBedrock]
-        D --> E[kubectl_prompt Template]
-        E --> F[AWS Bedrock API]
-        F --> G[Generated kubectl Command]
-    end
+    Note over U,API: 🚀 Natural Language Query Processing
     
-    subgraph "Command Execution"
-        G --> H[Python Subprocess]
-        H --> I[kubectl CLI]
-        I --> J[Kubernetes API]
-        J --> K[Pod Status & Logs]
-    end
+    U->>ST: "Show me failing pods"
+    ST->>LG: Initialize workflow state
     
-    subgraph "Output Analysis"
-        K --> L[LangChain ChatBedrock]
-        L --> M[explain_prompt Template]
-        M --> N[AWS Bedrock API]
-        N --> O[AI Analysis & Explanation]
-    end
+    Note over LG,BR: 🧠 Command Generation Phase
+    LG->>LC: Generate Command Node
+    LC->>BR: kubectl_prompt + query
+    BR->>LC: "kubectl get pods --field-selector=status.phase!=Running"
+    LC->>LG: Parsed command
     
-    O --> P[Formatted Response]
-    P --> B
-    B --> Q[User Interface Display]
+    Note over LG,API: ⚡ Command Execution Phase
+    LG->>K: Execute kubectl command
+    K->>API: API request via RBAC
+    API->>K: Pod status data
+    K->>LG: Raw command output
+    
+    LG->>K: kubectl describe pod <failing-pods>
+    K->>API: Describe pod requests
+    API->>K: Detailed pod info
+    
+    LG->>K: kubectl logs <failing-pods>
+    K->>API: Logs retrieval
+    API->>K: Container logs
+    K->>LG: Diagnostic data
+    
+    Note over LG,BR: 🔍 Analysis Phase
+    LG->>LC: Explain Output Node
+    LC->>BR: explain_prompt + output + diagnostics
+    BR->>LC: "Pod X is pending due to insufficient CPU resources..."
+    LC->>LG: Formatted explanation
+    
+    Note over ST,U: 📊 Response Presentation
+    LG->>ST: Complete workflow result
+    ST->>U: Formatted response with status indicators
 ```
 
 ## LangChain Integration Deep Dive
