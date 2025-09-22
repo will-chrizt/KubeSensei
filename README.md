@@ -230,7 +230,99 @@ sequenceDiagram
     ST->>U: Formatted response with status indicators
 ```
 
-## Internal Workflow
+## LangChain Integration Deep Dive
+
+### LangChain's Role in KubeSensei
+
+LangChain serves as the **AI orchestration backbone** that bridges natural language processing with Kubernetes operations. Here's how each LangChain component contributes:
+
+#### 🔗 **ChatBedrock Integration**
+```python
+# LangChain handles AWS Bedrock connectivity
+llm = ChatBedrock(
+    model_id="anthropic.claude-3-haiku-20240307-v1:0",
+    region_name="us-east-1"
+)
+```
+**Functions:**
+- **Model Abstraction**: Provides unified interface to AWS Bedrock
+- **Authentication Management**: Handles AWS credential integration
+- **Response Standardization**: Normalizes AI model outputs
+- **Error Handling**: Manages connection failures and retries
+
+#### 📋 **PromptTemplate Engine**
+```python
+# Specialized templates for different workflow phases
+kubectl_prompt = PromptTemplate(
+    input_variables=["query"],
+    template="Convert user request into kubectl command..."
+)
+
+explain_prompt = PromptTemplate(
+    input_variables=["command_output"],
+    template="Analyze Kubernetes output and provide troubleshooting..."
+)
+```
+**Functions:**
+- **Context Injection**: Dynamically inserts user queries and system data
+- **Prompt Optimization**: Engineered templates for specific Kubernetes tasks
+- **Variable Management**: Handles dynamic content replacement
+- **Consistency**: Ensures reliable AI behavior across different inputs
+
+#### ⚡ **Chain Operations & Response Processing**
+```python
+# LangChain manages the LLM invocation lifecycle
+response = llm.invoke(kubectl_prompt.format(query=query))
+text = response.content if hasattr(response, "content") else str(response)
+```
+**Functions:**
+- **Invocation Management**: Handles async/sync LLM calls
+- **Content Extraction**: Parses structured responses from AI models
+- **Format Validation**: Ensures responses meet expected formats
+- **Fallback Handling**: Manages malformed or unexpected responses
+
+### LangChain vs LangGraph Division of Labor
+
+| Component | Responsibility | Technology |
+|-----------|---------------|------------|
+| **Workflow Orchestration** | State management, node transitions, execution flow | 🔄 **LangGraph** |
+| **AI Model Integration** | LLM connectivity, prompt management, response handling | 🔗 **LangChain** |
+| **Business Logic** | kubectl execution, diagnostics collection, error handling | 🐍 **Pure Python** |
+| **User Interface** | Web interface, visualization, user interaction | 🎨 **Streamlit** |
+
+### LangChain Processing Pipeline
+
+```mermaid
+graph LR
+    subgraph "🔗 LangChain Processing Layer"
+        INPUT["`**User Query**
+        Natural Language`"]
+        
+        TEMPLATE["`**PromptTemplate**
+        📋 Format & Context
+        🎯 Task-Specific Prompts`"]
+        
+        MODEL["`**ChatBedrock**
+        🤖 Claude 3 Haiku
+        ☁️ AWS Integration`"]
+        
+        PARSE["`**Response Parser**
+        📤 Content Extraction
+        ✅ Format Validation`"]
+        
+        OUTPUT["`**Structured Output**
+        kubectl Commands
+        Explanations`"]
+        
+        INPUT --> TEMPLATE
+        TEMPLATE --> MODEL
+        MODEL --> PARSE
+        PARSE --> OUTPUT
+    end
+    
+    classDef langchain fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    class INPUT,TEMPLATE,MODEL,PARSE,OUTPUT langchain
+```
 
 ### 1. Command Generation Phase
 - **Input**: User's natural language request
