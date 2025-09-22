@@ -1,1 +1,1 @@
-# k8s-cluster-manager
+KubeSensei is a Kubernetes assistant that leverages LangGraph and AWS Bedrock to convert natural language queries into kubectl commands, execute them with automated troubleshooting, and is fully containerized with Docker for seamless Kubernetes deployment.
