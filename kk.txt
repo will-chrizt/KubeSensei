@@ -1,0 +1,34 @@
+Frontend tech:
+    -html , css
+    -React
+    -JavaScript 
+
+Backend tech:
+    - python with flask
+    - REST APIs
+    - SQLite
+    - java with springboot 
+    - Node.js , Express.js
+
+AI & Machine Learning:
+
+    -AWS Bedrock - 
+    -Anthropic Claude 3.5 Sonnet 
+    -Claude 3 Haiku 
+    -Amazon Titan Embed Text v2  
+    -LangChain 
+    -LangGraph
+    -FAISS (CPU) 
+    -Boto3
+
+Devops:
+    
+    -Docker
+    -k8s
+    -GitHub actions , CI/CD
+    -self-hosted runner
+    -Prometheus & Grafana
+    -Helm
+    -Terraform
+    -Argocd
+
