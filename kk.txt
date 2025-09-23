@@ -3,22 +3,17 @@ Frontend tech:
     -html , css
     -React
     -JavaScript 
-
 Backend tech:
     - python with flask
     - REST APIs
     - SQLite
     - java with springboot 
     - Node.js , Express.js
-
 AI & Machine Learning:
-
     -AWS Bedrock - 
     -Anthropic Claude 3.5 Sonnet 
     -Boto3
-
-Devops:
-    
+Devops  
     -Multi stage containerization using docker
     -Kubernetes deployment
     -GitHub actions , CI/CD
@@ -29,20 +24,13 @@ Devops:
     -Argocd 
     -One click deployment
 
-
-
-
 Project 2 -  https://github.com/will-chrizt/Terms-and-Conditions-Assistant
-
-
 Frontend tech:
     -html , css
     -streamlit
-
 Backend tech:
     - python with flask
     - REST APIs
-
 AI & Machine Learning:
  
     -RAG framework 
@@ -54,37 +42,23 @@ AI & Machine Learning:
     -FAISS (CPU) 
     -Boto3
     
-
 Devops:
-    
     -Multi stage containerization using docker
     -Kubernetes deployment
 
 
 Project 3 - https://github.com/will-chrizt/KubeSensei
-
-
 Frontend tech:
     -streamlit 
-
 Backend tech:
     - python with flask
     - REST APIs
-
-
 AI & Machine Learning:
-
     -AWS Bedrock - 
     -Claude 3 Haiku   
     -LangChain 
     -LangGraph
     -Boto3
-
-Devops:
-    
+Devops:    
     -Multi stage containerization using docker
     -Kubernetes deployment
-
-
-
-
